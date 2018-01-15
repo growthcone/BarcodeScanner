@@ -367,6 +367,28 @@ parentViewController:(UIViewController*)parentViewController
 //--------------------------------------------------------------------------
 - (void)barcodeScanDone:(void (^)(void))callbackBlock {
     self.capturing = NO;
+
+    AVCaptureDevice* __block device = nil;
+    if (self.isFrontCamera) {
+       NSArray* devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+       [devices enumerateObjectsUsingBlock:^(AVCaptureDevice *obj, NSUInteger idx, BOOL *stop) {
+           if (obj.position == AVCaptureDevicePositionFront) {
+               device = obj;
+           }
+       }];
+    } else {
+       device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+       if (!device) return @"unable to obtain video capture device";
+    }
+
+    [device lockForConfiguration:&error];
+    if (error == nil) {
+       if([device isAutoFocusRangeRestrictionSupported]) {
+           [device setAutoFocusRangeRestriction:AVCaptureAutoFocusRangeRestrictionNone];
+       }
+    }
+    [device unlockForConfiguration];
+
     [self.captureSession stopRunning];
     [self.parentViewController dismissViewControllerAnimated:self.isTransitionAnimated completion:callbackBlock];
 
@@ -524,7 +546,7 @@ parentViewController:(UIViewController*)parentViewController
     else {
         return @"unable to add video capture output to session";
     }
-    
+
     [output setMetadataObjectTypes:[self formatObjectTypes]];
 
     // setup capture preview layer
@@ -630,9 +652,9 @@ parentViewController:(UIViewController*)parentViewController
     if (self.formats != nil) {
         supportedFormats = [self.formats componentsSeparatedByString:@","];
     }
-    
+
     NSMutableArray * formatObjectTypes = [NSMutableArray array];
-    
+
     if (self.formats == nil || [supportedFormats containsObject:@"QR_CODE"]) [formatObjectTypes addObject:AVMetadataObjectTypeQRCode];
     if (self.formats == nil || [supportedFormats containsObject:@"AZTEC"]) [formatObjectTypes addObject:AVMetadataObjectTypeAztecCode];
     if (self.formats == nil || [supportedFormats containsObject:@"DATA_MATRIX"]) [formatObjectTypes addObject:AVMetadataObjectTypeDataMatrixCode];
@@ -644,7 +666,7 @@ parentViewController:(UIViewController*)parentViewController
     if (self.formats == nil || [supportedFormats containsObject:@"CODE_39"]) [formatObjectTypes addObject:AVMetadataObjectTypeCode39Code];
     if (self.formats == nil || [supportedFormats containsObject:@"ITF"]) [formatObjectTypes addObject:AVMetadataObjectTypeITF14Code];
     if (self.formats == nil || [supportedFormats containsObject:@"PDF_417"]) [formatObjectTypes addObject:AVMetadataObjectTypePDF417Code];
-    
+
     return formatObjectTypes;
 }
 
@@ -969,16 +991,16 @@ parentViewController:(UIViewController*)parentViewController
         NSLog(@"%@", @"An error occurred loading the overlay xib.  It appears that the overlayView outlet is not set.");
         return nil;
     }
-	
+
 	self.overlayView.autoresizesSubviews = YES;
     self.overlayView.autoresizingMask    = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.overlayView.opaque              = NO;
-	
+
 	CGRect bounds = self.view.bounds;
     bounds = CGRectMake(0, 0, bounds.size.width, bounds.size.height);
-	
+
 	[self.overlayView setFrame:bounds];
-	
+
     return self.overlayView;
 }
 
