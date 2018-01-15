@@ -378,14 +378,12 @@ parentViewController:(UIViewController*)parentViewController
        }];
     } else {
        device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-       if (!device) return @"unable to obtain video capture device";
+       if (!device) return;
     }
 
-    [device lockForConfiguration:&error];
-    if (error == nil) {
-       if([device isAutoFocusRangeRestrictionSupported]) {
-           [device setAutoFocusRangeRestriction:AVCaptureAutoFocusRangeRestrictionNone];
-       }
+    [device lockForConfiguration:nil];
+    if([device isAutoFocusRangeRestrictionSupported]) {
+       [device setAutoFocusRangeRestriction:AVCaptureAutoFocusRangeRestrictionNone];
     }
     [device unlockForConfiguration];
 
